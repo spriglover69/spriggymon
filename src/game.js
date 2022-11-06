@@ -1,4 +1,4 @@
-import { downArrow } from "./sprites";
+import { downArrow, upArrow } from "./sprites";
 import withHealthbar from "./sprites/withHealthbar";
 
 export default function startGame(you, them) {
@@ -10,7 +10,6 @@ export default function startGame(you, them) {
         name: you.name,
         attacks: you.attacks,
       },
-
       them: {
         hp: 100,
         strength: 10,
@@ -25,7 +24,6 @@ export default function startGame(you, them) {
     const amogus = "b";
 
     function render() {
-      console.log("render");
       clearText();
 
       if (state.you.hp <= 0 || state.them.hp <= 0) {
@@ -53,7 +51,8 @@ export default function startGame(you, them) {
       setLegend(
         [trigger, withHealthbar(you.sprite, state.you.hp)],
         [amogus, withHealthbar(them.sprite, state.them.hp)],
-        ["c", downArrow]
+        ["c", downArrow],
+        ["d", upArrow]
       );
 
       setMap(map`
@@ -78,32 +77,21 @@ export default function startGame(you, them) {
     }
 
     async function theyTakeTheirTurn() {
-      const attacked = Math.random() >= 0.5 ? attack("them") : weaken("them");
-
-      render();
-
-      await animateBump(amogus, attacked ? { x: -1 } : { y: -1 }, 200);
-
-      state.turn = "you";
-
-      render();
+      if (Math.random() < 0.5) {
+        await attack("them");
+      } else {
+        await weaken("them");
+      }
     }
 
     async function animateBump(sprite, { x, y }, time) {
-      console.log(getFirst(sprite).x, getFirst(sprite).y);
       getFirst(sprite).x += x || 0;
       getFirst(sprite).y += y || 0;
 
-      console.log(getFirst(sprite).x, getFirst(sprite).y);
-
       await new Promise((resolve) => setTimeout(resolve, time));
-
-      console.log(getFirst(sprite).x, getFirst(sprite).y);
 
       getFirst(sprite).x -= x || 0;
       getFirst(sprite).y -= y || 0;
-
-      console.log(getFirst(sprite).x, getFirst(sprite).y);
     }
 
     function hpDeductedForStrength(strength) {
@@ -112,76 +100,93 @@ export default function startGame(you, them) {
       return 10 + factor * 5;
     }
 
-    function attack(who) {
+    async function attack(who) {
       const player = who == "you" ? state.you : state.them;
+      const opponent = who == "you" ? state.them : state.you;
 
-      if (Math.random() > 0.6) {
-        if (who == "you") {
-          state.them.hp -= hpDeductedForStrength(state.them.strength);
-        } else {
-          state.you.hp -= hpDeductedForStrength(state.you.strength);
-        }
+      state.turn = undefined; // prevent user from inputting again
 
-        state.consoleText = `${player.name} ${player.attacks.attack}`;
+      state.consoleText = `${player.name} used\n${player.attacks.attack}...`;
+      render();
 
-        return true;
+      await new Promise((res) => setTimeout(res, 1000));
+
+      const shouldAttack = Math.random() > 0.4;
+
+      const hpLost = hpDeductedForStrength(opponent.strength);
+
+      if (shouldAttack) {
+        who == "you" ? (state.them.hp -= hpLost) : (state.you.hp -= hpLost);
+        state.consoleText = `... and ${opponent.name}\nlost ${hpLost} HP`;
       } else {
-        state.consoleText = `${player.name} MISSED`;
-        return false;
+        state.consoleText = "... but missed";
       }
+
+      render();
+
+      await animateBump(
+        who == "you" ? trigger : amogus,
+        shouldAttack ? { x: who == "you" ? 1 : -1 } : { y: -1 },
+        200
+      );
+
+      if (who == "you") {
+        state.turn = "them";
+        setTimeout(theyTakeTheirTurn, 2000);
+      } else {
+        state.turn = "you";
+      }
+
+      render();
     }
 
-    function weaken(who) {
+    async function weaken(who) {
       const player = who == "you" ? state.you : state.them;
+      const opponent = who == "you" ? state.them : state.you;
 
-      if (Math.random() > 0.4) {
-        if (who == "you") {
-          if (state.them.strength > 0) {
-            state.them.strength -= 2;
-          }
-        } else {
-          if (state.you.strength > 0) {
-            state.you.strength -= 2;
-          }
-        }
+      state.turn = undefined; // prevent user from inputting again
 
-        state.consoleText = `${player.name} ${player.attacks.weaken}`;
+      state.consoleText = `${player.name} used\n${player.attacks.weaken}...`;
+      render();
 
-        return true;
+      await new Promise((res) => setTimeout(res, 1000));
+
+      const shouldWeaken = Math.random() > 0.4;
+
+      if (shouldWeaken) {
+        who == "you" ? (state.them.strength -= 2) : (state.you.strength -= 2);
+        state.consoleText = `... and ${opponent.name}\nwas WEAKENED`;
       } else {
-        state.consoleText = `${player.name} MISSED`;
-        return false;
+        state.consoleText = "... but missed";
       }
+
+      render();
+
+      await animateBump(
+        who == "you" ? trigger : amogus,
+        shouldWeaken ? { x: who == "you" ? 1 : -1 } : { y: -1 },
+        200
+      );
+
+      if (who == "you") {
+        state.turn = "them";
+        setTimeout(theyTakeTheirTurn, 2000);
+      } else {
+        state.turn = "you";
+      }
+
+      render();
     }
 
     onInput("w", async () => {
       if (state.turn == "you") {
-        const attacked = attack("you");
-        state.turn = undefined;
-        render();
-
-        await animateBump(trigger, attacked ? { x: 1 } : { y: -1 }, 200);
-
-        if (state.them.hp > 0) {
-          state.turn = "them";
-          setTimeout(theyTakeTheirTurn, 1500);
-        } else {
-          resolve();
-          state.turn = undefined;
-        }
+        attack("you");
       }
     });
 
     onInput("a", async () => {
       if (state.turn == "you") {
-        const weakened = weaken("you");
-        state.turn = undefined;
-        render();
-
-        await animateBump(trigger, weakened ? { x: 1 } : { y: -1 }, 200);
-
-        state.turn = "them";
-        setTimeout(theyTakeTheirTurn, 2500);
+        weaken("you");
       }
     });
 

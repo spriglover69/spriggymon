@@ -12,16 +12,16 @@ const players = {
     name: "Wasabi",
     sprite: triggerSprite,
     attacks: {
-      attack: "used\nFACE LICK",
-      weaken: "\nSAT ON YOU",
+      attack: "FACE LICK",
+      weaken: "SIT ON YOU",
     },
   },
   zachsGrandpa: {
     name: "Old Man",
     sprite: zachsGrandpa,
     attacks: {
-      attack: "used\nCANE",
-      weaken: ["used\nOLD MAN SMELL", "used\nRACIAL EPITHET"][
+      attack: "CANE",
+      weaken: ["OLD MAN SMELL", "RACIAL EPITHET"][
         ~~(0.1 + Math.random())
       ],
     },
@@ -30,16 +30,16 @@ const players = {
     name: "Amogus",
     sprite: amogus,
     attacks: {
-      attack: "VENTED",
-      weaken: "used\nRED SUS",
+      attack: "VENT",
+      weaken: "RED SUS",
     },
   },
   orpheus: {
     name: "Orpheus",
     sprite: orpheus,
     attacks: {
-      attack: "\nLOOKED BACK",
-      weaken: "FOSSILIZED",
+      attack: "LOOK BACK",
+      weaken: "FOSSILIZE",
     },
   },
 };
