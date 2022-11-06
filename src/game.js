@@ -132,7 +132,6 @@ export default function startGame(you, them) {
     }
 
     function weaken(who) {
-      return;
       const player = who == "you" ? state.you : state.them;
 
       if (Math.random() > 0.4) {
@@ -148,14 +147,10 @@ export default function startGame(you, them) {
 
         state.consoleText = `${player.name} ${player.attacks.weaken}`;
 
-        render();
+        return true;
       } else {
-        who == "you" ? getFirst(trigger).y-- : getFirst(amogus).y--;
-        setTimeout(() => {
-          who == "you" ? getFirst(trigger).y++ : getFirst(amogus).y++;
-          state.consoleText = `${player.name} MISSED`;
-          render();
-        }, 200);
+        state.consoleText = `${player.name} MISSED`;
+        return false;
       }
     }
 
@@ -177,11 +172,16 @@ export default function startGame(you, them) {
       }
     });
 
-    onInput("a", () => {
+    onInput("a", async () => {
       if (state.turn == "you") {
-        weaken("you");
-        setTimeout(theyTakeTheirTurn, 2500);
+        const weakened = weaken("you");
+        state.turn = undefined;
+        render();
+
+        await animateBump(trigger, weakened ? { x: 1 } : { y: -1 }, 200);
+
         state.turn = "them";
+        setTimeout(theyTakeTheirTurn, 2500);
       }
     });
 
