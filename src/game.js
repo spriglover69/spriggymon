@@ -159,7 +159,7 @@ export default function startGame(you, them) {
 
       await new Promise((res) => setTimeout(res, 1000));
 
-      const shouldWeaken = Math.random() > 0.4;
+      const shouldWeaken = Math.random() < (player.accuracy ?? 0.6);
 
       if (shouldWeaken) {
         who == "you" ? (state.them.strength -= 2) : (state.you.strength -= 2);
