@@ -1,0 +1,12 @@
+{
+  "name": "spriggymon",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.15.13"
+  },
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --outfile=dist/bundle.js"
+  }
+}
