@@ -7,15 +7,14 @@ export default function startGame(you, them) {
       you: {
         hp: 100,
         strength: 10,
-        name: you.name,
-        attacks: you.attacks,
+        ...you,
       },
       them: {
         hp: 100,
         strength: 10,
-        name: them.name,
-        attacks: them.attacks,
+        ...them,
       },
+      showWinner: false,
       consoleText: "",
       turn: "you",
     };
@@ -26,12 +25,8 @@ export default function startGame(you, them) {
     function render() {
       clearText();
 
-      if (state.you.hp <= 0 || state.them.hp <= 0) {
-        setLegend(
-          [trigger, you.sprite, state.you.hp],
-          [amogus, them.sprite, state.them.hp],
-          ["c", downArrow]
-        );
+      if (state.showWinner) {
+        setLegend([trigger, you.sprite], [amogus, them.sprite]);
 
         setMap(map`
   .....
@@ -77,11 +72,14 @@ export default function startGame(you, them) {
     }
 
     async function theyTakeTheirTurn() {
-      if (Math.random() < 0.5) {
-        await attack("them");
-      } else {
-        await weaken("them");
-      }
+      const possibleAttacks = [];
+      if (state.them.attacks.attack) possibleAttacks.push(attack);
+      if (state.them.attacks.weaken) possibleAttacks.push(weaken);
+
+      // choose one at random
+      possibleAttacks[Math.floor(Math.random() * possibleAttacks.length)](
+        "them"
+      );
     }
 
     async function animateBump(sprite, { x, y }, time) {
@@ -111,7 +109,7 @@ export default function startGame(you, them) {
 
       await new Promise((res) => setTimeout(res, 1000));
 
-      const shouldAttack = Math.random() > 0.4;
+      const shouldAttack = Math.random() < (player.accuracy ?? 0.6);
 
       const hpLost = hpDeductedForStrength(opponent.strength);
 
@@ -129,6 +127,16 @@ export default function startGame(you, them) {
         shouldAttack ? { x: who == "you" ? 1 : -1 } : { y: -1 },
         200
       );
+
+      // check for a win
+      if (state.you.hp <= 0 || state.them.hp <= 0) {
+        setTimeout(() => {
+          state.showWinner = true;
+          render();
+        }, 1000);
+        setTimeout(() => resolve(state), 2000);
+        return;
+      }
 
       if (who == "you") {
         state.turn = "them";

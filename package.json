@@ -7,6 +7,6 @@
     "esbuild": "^0.15.13"
   },
   "scripts": {
-    "build": "esbuild src/index.js --bundle --minify --outfile=dist/bundle.js"
+    "build": "esbuild src/index.js --bundle --minify --supported:nullish-coalescing=false --supported:object-rest-spread=false --supported:logical-assignment=false --outfile=dist/bundle.js"
   }
 }

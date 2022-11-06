@@ -13,8 +13,9 @@ const players = {
     sprite: triggerSprite,
     attacks: {
       attack: "FACE LICK",
-      weaken: "SIT ON YOU",
+      // weaken: "SIT ON YOU",
     },
+    accuracy: 0,
   },
   zachsGrandpa: {
     name: "Old Man",
@@ -2641,4 +2642,6 @@ function renderText() {
   addText(text, opts);
 }
 
-// startGame(players.orpheus, players.wasabi);
+startGame(players.orpheus, players.wasabi).then((state) => {
+  console.log(`game ended. winner: ${state.you.hp <= 0 ? state.them.name : state.you.name}`)
+});
