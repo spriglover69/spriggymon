@@ -1,6 +1,11 @@
-import { wasabiBattle, amogusBattle, oldManBattle } from "./battles";
+import {
+  wasabiBattle,
+  amogusBattle,
+  oldManBattle,
+  triggerBattle,
+} from "./battles";
 import { state } from "./game";
-import { trigger } from "./sprites";
+import { wasabi } from "./sprites";
 
 const sprites = {
   switchOff: "Ê",
@@ -20,6 +25,7 @@ const sprites = {
   woodenDoor: "b",
   kara: "B",
   oldMan: "2",
+  trigger: "Ò",
 };
 
 const setAfterInput = (() => {
@@ -271,6 +277,7 @@ const offMapLayerLivers = {
   [sprites.vent]: 1,
   [sprites.amogus]: 2,
   [sprites.kara]: { hq: 1, callRoom: 1, outside: 2 },
+  [sprites.trigger]: 2,
 };
 
 /* becomes the legend after being sorted according to
@@ -1321,7 +1328,7 @@ L000000000000000`,
 1111111111111110
 000000000000000L`,
   ],
-  ["Z", trigger],
+  ["Z", wasabi],
   [
     "[",
     bitmap`L000000000000000
@@ -2884,6 +2891,27 @@ L0L0L222222L0L0L
 ..000330.00330..
 ....0000..0000..`,
   ],
+  [
+    "Ò",
+    `
+....C.CCCC.C....
+....CCCCCCCC....
+....CCCCCCCCC...
+...CC0CC0CCCC...
+...CCCCCCCCCCC..
+...CCC00CCCCCCC.
+...C0C0CC0CCCCC.
+...CC0000CCCCCC.
+...CCCCCCCCCCCC.
+...CCCCCCCCCCCC.
+...CCCCCCCCCCCC.
+...CCCCCCCCCCCC.
+....CCCCCCCCCCC.
+....CC..CC...CC.
+....CC..CC...CC.
+....C...C....C..
+`,
+  ],
 ];
 
 let screen = new MapStr(BLANK_SCREEN);
@@ -2907,19 +2935,20 @@ let modal = false;
     // openTombOf1kTriggers();
     // await openTombOf1kTriggers();
 
-    // if (false)
-    await textWall(
-      " It's your first    \n" +
-        " day working at     \n" +
-        " Hack Club HQ,      \n" +
-        "                    \n" +
-        " and you can't      \n" +
-        " wait to start.     \n" +
-        "                    \n" +
-        " ...                \n" +
-        "                    \n" +
-        " First, find Kara!  \n"
-    );
+    tombOf1kTriggers();
+    if (false)
+      await textWall(
+        " It's your first    \n" +
+          " day working at     \n" +
+          " Hack Club HQ,      \n" +
+          "                    \n" +
+          " and you can't      \n" +
+          " wait to start.     \n" +
+          "                    \n" +
+          " ...                \n" +
+          "                    \n" +
+          " First, find Kara!  \n"
+      );
   } else {
     /* teleport to call room start */
     // setRoom("callRoom", doormat(callRoomToHq));
@@ -2984,12 +3013,13 @@ async function tombOf1kTriggers() {
   fullscreen = 1;
 
   if (triggerMoveInterval != undefined) clearInterval(triggerMoveInterval);
-  triggerMoveInterval = setInterval(() => {
+  triggerMoveInterval = setInterval(async () => {
     if (room != rooms.bank) {
       clearInterval(triggerMoveInterval);
       triggerMoveInterval = undefined;
     }
-    for (const p of room[2].positionsOf(sprites.amogus))
+    const triggersB4 = [...room[2].positionsOf(sprites.trigger)];
+    for (const p of room[2].positionsOf(sprites.trigger))
       room[2].write(...p, ".");
 
     for (let i = 0; i < enemies; i++) {
@@ -3001,19 +3031,31 @@ async function tombOf1kTriggers() {
       let tx = (((now / T / 9) * 3) % 1) * 9;
       const x = 1 + ~~tx;
       const y = 1 + ~~ty;
-      room[2].write(x, y, sprites.amogus);
+      room[2].write(x, y, sprites.trigger);
       if (room[1].read(x, y) == sprites.player) {
-        room[1].write(x, y, ".");
-        room[1].write(...startPos, sprites.player);
+        // room[1].write(x, y, ".");
+        // room[1].write(...startPos, sprites.player);
 
-        const won = ~~(Math.random() + 0.5);
+        clearInterval(triggerMoveInterval);
+
+        modal = true;
+        fullscreen = 0;
+        for (const p of triggersB4) room[2].write(...p, sprites.trigger);
+        render();
+
+        await new Promise((res) => setTimeout(res, 1000));
+
+        const state = await triggerBattle();
+        const won = state.you.hp > 0;
+
+        modal = false;
 
         if (won) {
-          player = [...startPos];
+          tombOf1kTriggers();
+
           movePlayer(0, 0);
           enemies *= 0.8;
         } else {
-          clearInterval(triggerMoveInterval);
           findFnsTrigger(karaYouBlackedOut).active = 1;
           findFnsTrigger(karaTakeThis).active = 0;
           findFnsTrigger(karaYouLate).active = 0;
