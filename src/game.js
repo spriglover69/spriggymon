@@ -1,6 +1,8 @@
 import { downArrow, upArrow } from "./sprites";
 import withHealthbar from "./sprites/withHealthbar";
 
+export let playerHp = 100;
+
 export let state = {
   gameRunning: false,
   you: {
@@ -115,7 +117,13 @@ async function attack(who) {
   const hpLost = hpDeductedForStrength(opponent.strength);
 
   if (shouldAttack) {
-    who == "you" ? (state.them.hp -= hpLost) : (state.you.hp -= hpLost);
+    if (who == "you") {
+      state.them.hp -= hpLost;
+    } else {
+      state.you.hp -= hpLost;
+      playerHp = state.you.hp;
+    }
+
     state.consoleText = `... and ${opponent.name}\nlost ${hpLost} HP`;
   } else {
     state.consoleText = "... but missed";
@@ -167,7 +175,13 @@ async function heal(who) {
   const hpGained = 10;
 
   if (shouldHeal) {
-    who == "you" ? (state.you.hp += hpGained) : (state.them.hp += hpGained);
+    if (who == "you") {
+      state.you.hp += hpGained;
+      playerHp = state.you.hp;
+    } else {
+      state.them.hp += hpGained;
+    }
+
     state.consoleText = `... and healed to\n+${hpGained} HP`;
   } else {
     state.consoleText = "... but missed";
@@ -258,7 +272,7 @@ export default function startGame(you, them) {
     state = {
       gameRunning: true,
       you: {
-        hp: 100,
+        hp: playerHp,
         strength: 10,
         ...you,
       },
