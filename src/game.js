@@ -57,8 +57,14 @@ export default function startGame(you, them) {
     .....`);
 
       if (state.turn == "you") {
-        addText("W to ATTACK", { x: 1, y: 1 });
-        addText("A to WEAKEN", { x: 1, y: 2 });
+        const availableAttacks = ["W to ATTACK"];
+        if (state.you.attacks.weaken) availableAttacks.push("A to WEAKEN");
+        if (state.you.attacks.heal && state.you.hp <= 90)
+          availableAttacks.push("S to HEAL");
+
+        availableAttacks.forEach((attack, index) => {
+          addText(attack, { x: 1, y: index + 1 });
+        });
       }
 
       if (state.consoleText) {
@@ -75,6 +81,8 @@ export default function startGame(you, them) {
       const possibleAttacks = [];
       if (state.them.attacks.attack) possibleAttacks.push(attack);
       if (state.them.attacks.weaken) possibleAttacks.push(weaken);
+      if (state.them.attacks.heal && state.them.hp <= 90)
+        possibleAttacks.push(heal);
 
       // choose one at random
       possibleAttacks[Math.floor(Math.random() * possibleAttacks.length)](
@@ -148,6 +156,45 @@ export default function startGame(you, them) {
       render();
     }
 
+    async function heal(who) {
+      const player = who == "you" ? state.you : state.them;
+
+      state.turn = undefined; // prevent user from inputting again
+
+      state.consoleText = `${player.name} used\n${player.attacks.heal}...`;
+      render();
+
+      await new Promise((res) => setTimeout(res, 1000));
+
+      const shouldHeal = true; // just in case it should be made random later
+
+      const hpGained = 10;
+
+      if (shouldHeal) {
+        who == "you" ? (state.you.hp += hpGained) : (state.them.hp += hpGained);
+        state.consoleText = `... and healed to\n+${hpGained} HP`;
+      } else {
+        state.consoleText = "... but missed";
+      }
+
+      render();
+
+      // await animateBump(
+      //   who == "you" ? trigger : amogus,
+      //   shouldHeal ? { x: who == "you" ? 1 : -1 } : { y: -1 },
+      //   200
+      // );
+
+      if (who == "you") {
+        state.turn = "them";
+        setTimeout(theyTakeTheirTurn, 2000);
+      } else {
+        state.turn = "you";
+      }
+
+      render();
+    }
+
     async function weaken(who) {
       const player = who == "you" ? state.you : state.them;
       const opponent = who == "you" ? state.them : state.you;
@@ -193,8 +240,14 @@ export default function startGame(you, them) {
     });
 
     onInput("a", async () => {
-      if (state.turn == "you") {
+      if (state.you.attacks.weaken && state.turn == "you") {
         weaken("you");
+      }
+    });
+
+    onInput("s", async () => {
+      if (state.you.attacks.heal && state.turn == "you") {
+        heal("you");
       }
     });
 

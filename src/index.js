@@ -15,15 +15,14 @@ const players = {
       // weaken: "SIT ON YOU",
     },
     accuracy: 0,
+    strength: 9,
   },
   zachsGrandpa: {
     name: "Old Man",
     sprite: zachsGrandpa,
     attacks: {
       attack: "CANE",
-      weaken: ["OLD MAN SMELL", "RACIAL EPITHET"][
-        ~~(0.1 + Math.random())
-      ],
+      weaken: ["OLD MAN SMELL", "RACIAL EPITHET"][~~(0.1 + Math.random())],
     },
   },
   amogus: {
@@ -32,6 +31,7 @@ const players = {
     attacks: {
       attack: "VENT",
       weaken: "RED SUS",
+      heal: "EMERGENCY MEETING",
     },
   },
   orpheus: {
@@ -40,10 +40,38 @@ const players = {
     attacks: {
       attack: "LOOK BACK",
       weaken: "FOSSILIZE",
+      heal: "CHIRP",
     },
   },
 };
 
-startGame(players.orpheus, players.wasabi).then((state) => {
-  console.log(`game ended. winner: ${state.you.hp <= 0 ? state.them.name : state.you.name}`)
-});
+async function wasabiFight() {
+  return await startGame(
+    {
+      ...players.orpheus,
+      attacks: { attack: players.orpheus.attacks.attack },
+      accuracy: 0.8,
+    },
+    players.wasabi
+  );
+}
+
+async function oldManFight() {
+  return await startGame(
+    {
+      ...players.orpheus,
+      attacks: {
+        attack: players.orpheus.attacks.attack,
+        weaken: players.orpheus.attacks.weaken,
+      },
+      accuracy: 0.7,
+    },
+    players.zachsGrandpa
+  );
+}
+
+async function amogusFight() {
+  return await startGame(players.orpheus, players.amogus);
+}
+
+amogusFight();
