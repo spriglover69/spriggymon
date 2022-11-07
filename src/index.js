@@ -19,6 +19,7 @@ const sprites = {
   ironDoor: "j",
   woodenDoor: "b",
   kara: "B",
+  oldMan: "2",
 };
 
 const setAfterInput = (() => {
@@ -3382,15 +3383,15 @@ async function wasabiGonFiteU() {
       " my pocket ...      \n"
   );
 
+  await wasabiBattle();
+  setRoom(roomKey, player);
+  clearText();
+
   const corner = doormat(callRoomToCloset);
   await animateSpriteMarch(sprites.ghost, corner, {
     pauseAfter: 0,
     speed: 200,
   });
-
-  await wasabiBattle();
-  setRoom(roomKey, player);
-  clearText();
 
   await Promise.all([
     animateSpriteMarch(sprites.chest, [corner[0] + 2, corner[1]], {
@@ -3527,6 +3528,10 @@ async function amogusGonFiteU() {
       " EMERGENCY MEETING? \n"
   );
 
+  await amogusBattle();
+  setRoom(roomKey, player);
+  clearText();
+
   await new Promise((res) => setTimeout(res, 500));
   rooms.hq[2].write(...hqHiddenVent, "."), render();
   await new Promise((res) => setTimeout(res, 200));
@@ -3590,6 +3595,18 @@ async function oldManGonFiteU() {
       " whippersnapper an  \n" +
       " ass whoopin!       \n"
   );
+
+  await oldManBattle();
+  setRoom(roomKey, player);
+  clearText();
+
+  await new Promise((res) => setTimeout(res, 500));
+  rooms.closet[1].write(2, 2, "."), render();
+  await new Promise((res) => setTimeout(res, 200));
+  rooms.closet[1].write(2, 2, sprites.oldMan), render();
+  await new Promise((res) => setTimeout(res, 100));
+  rooms.closet[1].write(2, 2, "."), render();
+  await new Promise((res) => setTimeout(res, 500));
 
   modal = false;
   if (room) render();
