@@ -101,7 +101,8 @@ class MapStr {
     } while (pop());
   }
 }
-const rooms = {
+let rooms;
+const resetRooms = () => rooms = {
   outside: [
     /* ground layer (under player) */
     new MapStr(map`
@@ -212,6 +213,7 @@ aiziiriiziq
 ...........`),
   ],
 };
+resetRooms();
 const [outsideToCave] = [...rooms.outside[2].positionsOf(sprites.caveEntrance)];
 const [outsideToCStore, outsideToHq] = [
   ...rooms.outside[2].positionsOf(sprites.woodenDoor),
@@ -239,16 +241,19 @@ const [switchPos] = [...rooms.bank[2].positionsOf(sprites.switch)];
 rooms.hq[1].write(...hqHiddenVent, ".");
 const doormat = (pos) => [pos[0], pos[1] + 1];
 const above = (pos) => [pos[0], pos[1] - 1];
-const triggers = {
+let triggers;
+const resetTriggers = () => triggers = {
   outside: [
     { active: 1, pos: outsideToCave, fn: doorLockedBank },
     { active: 0, pos: outsideToCave, fn: tombOf1kTriggers },
     { active: 1, pos: outsideToCStore, fn: doorLockedCStore },
+    { active: 0, pos: outsideToCStore, fn: zachAtCStore },
     { active: 0, pos: doormat(signPos), fn: maxBankNeedsRestart },
     { active: 0, pos: ellaPos, fn: ellaInteract },
   ],
   hq: [
     { active: 1, pos: doormat(hqToOutside), fn: karaYouLate },
+    { active: 0, pos: doormat(hqToOutside), fn: zachYouLate },
     { active: 0, pos: doormat(hqToOutside), fn: karaYouBlackedOut },
     { active: 1, pos: doormat(hqToCallRoom), fn: karaTakeThis },
     { active: 0, pos: doormat(hqToCallRoom), fn: karaDidZachVent },
@@ -265,6 +270,7 @@ const triggers = {
   ],
   bank: [{ active: 1, pos: switchPos, fn: bankFlipSwitch }],
 };
+resetTriggers();
 const findFnsTrigger = (fn) =>
   Object.values(triggers)
     .flat()
@@ -2921,7 +2927,25 @@ let questText = "QUEST: Find Kara!";
 let fullscreen = false;
 let modal = false;
 
+const startGame = async () => {
+  setRoom("outside", [2, 8]);
+
+  await textWall(
+    " It's your first    \n" +
+      " day working at     \n" +
+      " Hack Club HQ,      \n" +
+      "                    \n" +
+      " and you can't      \n" +
+      " wait to start.     \n" +
+      "                    \n" +
+      " ...                \n" +
+      "                    \n" +
+      " First, find Kara!  \n"
+  );
+}
+
 (async () => {
+  setRoom("outside", [2, 8]);
   setAfterInput(render);
   setInterval(renderText, 100);
 
@@ -2930,25 +2954,21 @@ let modal = false;
     // setRoom("outside", [10,8]);
 
     /* outside bank near sign */
-    setRoom("outside", [2, 8]);
+    // setRoom("outside", [2, 8]);
+
+    /* outside near CStore */
+    // openZachDialogue();
+  findFnsTrigger(karaYouLate).active = 0;
+  findFnsTrigger(zachYouLate).active = 1;
+  const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
+  rooms.hq[1].write(...karaPos, sprites.max);
 
     // openTombOf1kTriggers();
     // await openTombOf1kTriggers();
 
-    tombOf1kTriggers();
+    // tombOf1kTriggers();
     if (false)
-      await textWall(
-        " It's your first    \n" +
-          " day working at     \n" +
-          " Hack Club HQ,      \n" +
-          "                    \n" +
-          " and you can't      \n" +
-          " wait to start.     \n" +
-          "                    \n" +
-          " ...                \n" +
-          "                    \n" +
-          " First, find Kara!  \n"
-      );
+      await startGame();
   } else {
     /* teleport to call room start */
     // setRoom("callRoom", doormat(callRoomToHq));
@@ -3001,7 +3021,124 @@ async function bankFlipSwitch(b4Pos) {
       " coffee!            \n"
   );
 
+  openZachDialogue();
+
   modal = false;
+}
+
+function openZachDialogue() {
+  findFnsTrigger(zachAtCStore).active = 1;
+  findFnsTrigger(doorLockedCStore).active = 0;
+}
+
+async function zachAtCStore(b4Pos) {
+  const p = [...player];
+  modal = 1;
+  movePlayer(b4Pos[0] - p[0], b4Pos[1] - p[1]);
+  render();
+  await new Promise(res => setTimeout(res, 500));
+  movePlayer(b4Pos[0] - p[0], b4Pos[1] - p[1]);
+  render();
+  await new Promise(res => setTimeout(res, 1000));
+  room[1].write(...b4Pos, sprites.max);
+  render();
+
+  await new Promise(res => setTimeout(res, 1000));
+
+  await textWall(
+    " There you are! I   \n" +
+    " need your help!    \n" +
+    "                    \n" +
+    " I've found the best\n" +
+    " way to make HC more\n" +
+    " popular.           \n" +
+    "                    \n" +
+    " Coding is too hard.\n" +
+    " People don't like  \n" +
+    " it. But coffee?    \n" +
+    "                    \n" +
+    " Everyone loves it! \n"
+  );
+
+  await textWall(
+    " So I'm changing my \n" +
+    " name to Zach Latte!\n" +
+    "                    \n" +
+    " We'll be known     \n" +
+    " everywhere!        \n" +
+    "                    \n" +
+    " You can help me    \n" +
+    " break the news ... \n" +
+    "                    \n" +
+    " You don't seem so  \n" +
+    " enthusiastic.      \n"
+  );
+
+  await textWall(
+    " It's great to meet \n" +
+    " you, finally, Zach!\n" +
+    "                    \n" +
+    " But, fundamentally \n" +
+    " changing what HC is\n" +
+    " to make it more    \n" +
+    " popular doesn't do \n" +
+    " the world any good!\n" +
+    "                    \n" +
+    " By trying to be    \n" +
+    " everything to      \n" +
+    " everyone, you      \n" +
+    " become nothing     \n" +
+    " to no one.         \n"  
+  );
+
+  await textWall(
+    " ...                \n" +
+    "                    \n" +
+    " Haha, just kidding.\n" +
+    "                    \n" +
+    " This fever dream   \n" +
+    " has been too brain \n" +
+    " dead to pull off   \n" +
+    " messaging like that\n" +
+    "                    \n" +
+    " ...                \n" +
+    "                    \n" +
+    " So what really     \n" +
+    " happened on your   \n" +
+    " first day?         \n"  
+  );
+
+  render();
+  await new Promise(res => setTimeout(res, 1000));
+
+  screen = new MapStr(map`
+...
+...
+...`);
+  camera[0]++;
+  camera[1]++;
+  render();
+  await new Promise(res => setTimeout(res,  700));
+
+  screen = new MapStr(map`
+.`);
+  camera[0]++;
+  camera[1]++;
+  render();
+  await new Promise(res => setTimeout(res,  700));
+
+  screen = new MapStr(BLANK_SCREEN);
+  resetTriggers();
+  resetRooms();
+  findFnsTrigger(karaYouLate).active = 0;
+  findFnsTrigger(zachYouLate).active = 1;
+
+  const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
+  rooms.hq[1].write(...karaPos, sprites.max);
+
+  await startGame();
+
+  modal = 0;
 }
 
 let enemies = 10;
@@ -3337,6 +3474,53 @@ async function doorLockedBank() {
   if (room) render();
 
   findFnsTrigger(doorLockedBank).active = 1;
+}
+
+async function zachYouLate() {
+  modal = true;
+
+  const [zachPos] = [...rooms.hq[1].positionsOf(sprites.max)];
+  await animateSpriteMarch(sprites.player, zachPos);
+  // await animateSpriteMarch(sprites.player, zachPos, { axis: 1 });
+  [player] = [...room[1].positionsOf(sprites.player)];
+
+  await textWall(
+    " There you are!     \n" +
+    " Where have you     \n" +
+    " been!?             \n" +
+    " We've been waiting!\n"
+  );
+  modal = 1;
+
+  render();
+  await new Promise(res => setTimeout(res, 1000));
+
+  screen = new MapStr(map`
+...
+...
+...`);
+  camera[0]++;
+  // camera[1]++;
+  render();
+  await new Promise(res => setTimeout(res,  700));
+
+  screen = new MapStr(map`
+.`);
+  camera[0]++;
+  camera[1]++;
+  render();
+  modal = 1;
+  await new Promise(res => setTimeout(res,  700));
+
+  screen = new MapStr(map`
+.`);
+  screen.set();
+
+  questText = "THE END";
+  await new Promise();
+
+  // modal = false;
+  // if (room) render();
 }
 
 async function karaYouLate() {
