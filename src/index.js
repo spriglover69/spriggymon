@@ -2958,16 +2958,16 @@ const startGame = async () => {
 
     /* outside near CStore */
     // openZachDialogue();
-  findFnsTrigger(karaYouLate).active = 0;
-  findFnsTrigger(zachYouLate).active = 1;
-  const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
-  rooms.hq[1].write(...karaPos, sprites.max);
+  // findFnsTrigger(karaYouLate).active = 0;
+  // findFnsTrigger(zachYouLate).active = 1;
+  // const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
+  // rooms.hq[1].write(...karaPos, sprites.max);
 
     // openTombOf1kTriggers();
     // await openTombOf1kTriggers();
 
     // tombOf1kTriggers();
-    if (false)
+    // if (false)
       await startGame();
   } else {
     /* teleport to call room start */
