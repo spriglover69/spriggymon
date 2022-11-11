@@ -4,7 +4,7 @@ import {
   oldManBattle,
   triggerBattle,
 } from "./battles";
-import { state } from "./game";
+import { setPlayerHp, state } from "./game";
 import { wasabi } from "./sprites";
 
 const sprites = {
@@ -27,6 +27,8 @@ const sprites = {
   oldMan: "2",
   trigger: "Ò",
 };
+
+let canHeal = false;
 
 const setAfterInput = (() => {
   let fn = () => {};
@@ -102,10 +104,11 @@ class MapStr {
   }
 }
 let rooms;
-const resetRooms = () => rooms = {
-  outside: [
-    /* ground layer (under player) */
-    new MapStr(map`
+const resetRooms = () =>
+  (rooms = {
+    outside: [
+      /* ground layer (under player) */
+      new MapStr(map`
   $%$!$$$$$$$$
   $$$!$%%$$%$!
   $$$$$$!$$$$$
@@ -115,8 +118,8 @@ const resetRooms = () => rooms = {
   !$$%$$9$$$$$
   $$$$&8I80$9$
     88881$$$(8I8`),
-    /* hard layer (stops player movement) */
-    new MapStr(map`
+      /* hard layer (stops player movement) */
+      new MapStr(map`
   .©©.©©©...Í.
   ............
   .¾¾¾........
@@ -126,8 +129,8 @@ const resetRooms = () => rooms = {
   .¶.¶.....¶.¶
   ...É........
   ......¶.....`),
-    /* house layer (floats above player) */
-    new MapStr(map`
+      /* house layer (floats above player) */
+      new MapStr(map`
   ............
   ............
   .*3;..£³....
@@ -137,82 +140,82 @@ const resetRooms = () => rooms = {
   .,-=.....Qbq
   ............
   ............`),
-  ],
-  hq: [
-    new MapStr(map`
+    ],
+    hq: [
+      new MapStr(map`
 .....
 [dddl
 ]eeem
 ^fffn`),
-    new MapStr(map`
+      new MapStr(map`
 .iii.
 .B...
 .....
 ..¢..`),
-    new MapStr(map`
+      new MapStr(map`
 ¡...b
 .....
 .....
 .....`),
-  ],
-  callRoom: [
-    new MapStr(map`
+    ],
+    callRoom: [
+      new MapStr(map`
 .....
 [dddl
 ]eeem
 ^fffn`),
-    new MapStr(map`
+      new MapStr(map`
 .zi.i
 ...Å.
 .....
 ..Z?.`),
-    new MapStr(map`
+      new MapStr(map`
 Â..b.
 .....
 .....
 .....`),
-  ],
-  closet: [
-    new MapStr(map`
+    ],
+    closet: [
+      new MapStr(map`
 .....
 ..[dl
 ..^fn
 .....`),
-    new MapStr(map`
+      new MapStr(map`
 ÐÐa.q
 ÐÐ...
 ÐÐ2..
 ÐÐÐÐÐ`),
-    new MapStr(map`
+      new MapStr(map`
 ...b.
 .....
 .....
 .....`),
-  ],
-  bank: [
-    new MapStr(map`
+    ],
+    bank: [
+      new MapStr(map`
 ...........
 [dddddddddl
 ]PePePePePm
 ]ePePePePem
 ]PePePePePm
 ^fffffffffn`),
-    new MapStr(map`
+      new MapStr(map`
 aiziiriiziq
 ...........
 ...........
 ...........
 ...........
 ...........`),
-    new MapStr(map`
+      new MapStr(map`
 ...........
 ...........
 ...........
 ..........Ë
 ...........
 ...........`),
-  ],
-};
+    ],
+  });
 resetRooms();
 const [outsideToCave] = [...rooms.outside[2].positionsOf(sprites.caveEntrance)];
 const [outsideToCStore, outsideToHq] = [
@@ -242,34 +245,39 @@ rooms.hq[1].write(...hqHiddenVent, ".");
 const doormat = (pos) => [pos[0], pos[1] + 1];
 const above = (pos) => [pos[0], pos[1] - 1];
 let triggers;
-const resetTriggers = () => triggers = {
-  outside: [
-    { active: 1, pos: outsideToCave, fn: doorLockedBank },
-    { active: 0, pos: outsideToCave, fn: tombOf1kTriggers },
-    { active: 1, pos: outsideToCStore, fn: doorLockedCStore },
-    { active: 0, pos: outsideToCStore, fn: zachAtCStore },
-    { active: 0, pos: doormat(signPos), fn: maxBankNeedsRestart },
-    { active: 0, pos: ellaPos, fn: ellaInteract },
-  ],
-  hq: [
-    { active: 1, pos: doormat(hqToOutside), fn: karaYouLate },
-    { active: 0, pos: doormat(hqToOutside), fn: zachYouLate },
-    { active: 0, pos: doormat(hqToOutside), fn: karaYouBlackedOut },
-    { active: 1, pos: doormat(hqToCallRoom), fn: karaTakeThis },
-    { active: 0, pos: doormat(hqToCallRoom), fn: karaDidZachVent },
-    { active: 0, pos: above(hqHiddenVent), fn: amogusGonFiteU },
-    { active: 0, pos: doormat(hqToOutside), fn: karaHealUrMonz },
-  ],
-  callRoom: [
-    { active: 1, pos: doormat(callRoomToHq), fn: wasabiGonFiteU },
-    { active: 1, pos: above(callRoomDeskPos), fn: heyThatsZachsDesk },
-    { active: 1, pos: callRoomToCloset, fn: pushCobwebs },
-  ],
-  closet: [
-    { active: 1, pos: doormat(doormat(closetToCallRoom)), fn: oldManGonFiteU },
-  ],
-  bank: [{ active: 1, pos: switchPos, fn: bankFlipSwitch }],
-};
+const resetTriggers = () =>
+  (triggers = {
+    outside: [
+      { active: 1, pos: outsideToCave, fn: doorLockedBank },
+      { active: 0, pos: outsideToCave, fn: tombOf1kTriggers },
+      { active: 1, pos: outsideToCStore, fn: doorLockedCStore },
+      { active: 0, pos: outsideToCStore, fn: zachAtCStore },
+      { active: 0, pos: doormat(signPos), fn: maxBankNeedsRestart },
+      { active: 0, pos: ellaPos, fn: ellaInteract },
+    ],
+    hq: [
+      { active: 1, pos: doormat(hqToOutside), fn: karaYouLate },
+      { active: 0, pos: doormat(hqToOutside), fn: zachYouLate },
+      { active: 0, pos: doormat(hqToOutside), fn: karaYouBlackedOut },
+      { active: 1, pos: doormat(hqToCallRoom), fn: karaTakeThis },
+      { active: 0, pos: doormat(hqToCallRoom), fn: karaDidZachVent },
+      { active: 0, pos: above(hqHiddenVent), fn: amogusGonFiteU },
+      { active: 0, pos: doormat(hqToOutside), fn: karaHealUrMonz },
+    ],
+    callRoom: [
+      { active: 1, pos: doormat(callRoomToHq), fn: wasabiGonFiteU },
+      { active: 1, pos: above(callRoomDeskPos), fn: heyThatsZachsDesk },
+      { active: 1, pos: callRoomToCloset, fn: pushCobwebs },
+    ],
+    closet: [
+      {
+        active: 1,
+        pos: doormat(doormat(closetToCallRoom)),
+        fn: oldManGonFiteU,
+      },
+    ],
+    bank: [{ active: 1, pos: switchPos, fn: bankFlipSwitch }],
+  });
 resetTriggers();
 const findFnsTrigger = (fn) =>
   Object.values(triggers)
@@ -2942,7 +2950,7 @@ const startGame = async () => {
       "                    \n" +
       " First, find Kara!  \n"
   );
-}
+};
 
 (async () => {
   setRoom("outside", [2, 8]);
@@ -2958,17 +2966,17 @@ const startGame = async () => {
 
     /* outside near CStore */
     // openZachDialogue();
-  // findFnsTrigger(karaYouLate).active = 0;
-  // findFnsTrigger(zachYouLate).active = 1;
-  // const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
-  // rooms.hq[1].write(...karaPos, sprites.max);
+    // findFnsTrigger(karaYouLate).active = 0;
+    // findFnsTrigger(zachYouLate).active = 1;
+    // const [karaPos] = [...rooms.hq[1].positionsOf(sprites.kara)];
+    // rooms.hq[1].write(...karaPos, sprites.max);
 
     // openTombOf1kTriggers();
     // await openTombOf1kTriggers();
 
     // tombOf1kTriggers();
     // if (false)
-      await startGame();
+    await startGame();
   } else {
     /* teleport to call room start */
     // setRoom("callRoom", doormat(callRoomToHq));
@@ -3005,7 +3013,8 @@ async function bankFlipSwitch(b4Pos) {
 
   await textWall(
     " Great work! Bank's \n" +
-      " working great now, \n" +
+      " looking ...        \n" +
+      " good to bueno!     \n" +
       " ...                \n" +
       "   ... mostly ...   \n"
   );
@@ -3036,80 +3045,80 @@ async function zachAtCStore(b4Pos) {
   modal = 1;
   movePlayer(b4Pos[0] - p[0], b4Pos[1] - p[1]);
   render();
-  await new Promise(res => setTimeout(res, 500));
+  await new Promise((res) => setTimeout(res, 500));
   movePlayer(b4Pos[0] - p[0], b4Pos[1] - p[1]);
   render();
-  await new Promise(res => setTimeout(res, 1000));
+  await new Promise((res) => setTimeout(res, 1000));
   room[1].write(...b4Pos, sprites.max);
   render();
 
-  await new Promise(res => setTimeout(res, 1000));
+  await new Promise((res) => setTimeout(res, 1000));
 
   await textWall(
     " There you are! I   \n" +
-    " need your help!    \n" +
-    "                    \n" +
-    " I've found the best\n" +
-    " way to make HC more\n" +
-    " popular.           \n" +
-    "                    \n" +
-    " Coding is too hard.\n" +
-    " People don't like  \n" +
-    " it. But coffee?    \n" +
-    "                    \n" +
-    " Everyone loves it! \n"
+      " need your help!    \n" +
+      "                    \n" +
+      " I've found the best\n" +
+      " way to make HC more\n" +
+      " popular.           \n" +
+      "                    \n" +
+      " Coding is too hard.\n" +
+      " People don't like  \n" +
+      " it. But coffee?    \n" +
+      "                    \n" +
+      " Everyone loves it! \n"
   );
 
   await textWall(
     " So I'm changing my \n" +
-    " name to Zach Latte!\n" +
-    "                    \n" +
-    " We'll be known     \n" +
-    " everywhere!        \n" +
-    "                    \n" +
-    " You can help me    \n" +
-    " break the news ... \n" +
-    "                    \n" +
-    " You don't seem so  \n" +
-    " enthusiastic.      \n"
+      " name to Zach Latte!\n" +
+      "                    \n" +
+      " We'll be known     \n" +
+      " everywhere!        \n" +
+      "                    \n" +
+      " You can help me    \n" +
+      " break the news ... \n" +
+      "                    \n" +
+      " You don't seem so  \n" +
+      " enthusiastic.      \n"
   );
 
   await textWall(
     " It's great to meet \n" +
-    " you, finally, Zach!\n" +
-    "                    \n" +
-    " But, fundamentally \n" +
-    " changing what HC is\n" +
-    " to make it more    \n" +
-    " popular doesn't do \n" +
-    " the world any good!\n" +
-    "                    \n" +
-    " By trying to be    \n" +
-    " everything to      \n" +
-    " everyone, you      \n" +
-    " become nothing     \n" +
-    " to no one.         \n"  
+      " you, finally, Zach!\n" +
+      "                    \n" +
+      " But, fundamentally \n" +
+      " changing what HC is\n" +
+      " to make it more    \n" +
+      " popular doesn't do \n" +
+      " the world any good!\n" +
+      "                    \n" +
+      " By trying to be    \n" +
+      " everything to      \n" +
+      " everyone, you      \n" +
+      " become nothing     \n" +
+      " to no one.         \n"
   );
 
   await textWall(
     " ...                \n" +
-    "                    \n" +
-    " Haha, just kidding.\n" +
-    "                    \n" +
-    " This fever dream   \n" +
-    " has been too brain \n" +
-    " dead to pull off   \n" +
-    " messaging like that\n" +
-    "                    \n" +
-    " ...                \n" +
-    "                    \n" +
-    " So what really     \n" +
-    " happened on your   \n" +
-    " first day?         \n"  
+      "                    \n" +
+      " Haha, just kidding.\n" +
+      "                    \n" +
+      " This fever dream   \n" +
+      " has been too brain \n" +
+      " dead to pull off   \n" +
+      " messaging like that\n" +
+      "                    \n" +
+      " ...                \n" +
+      "                    \n" +
+      " So what really     \n" +
+      " happened on your   \n" +
+      " first day?         \n"
   );
 
   render();
-  await new Promise(res => setTimeout(res, 1000));
+  await new Promise((res) => setTimeout(res, 1000));
 
   screen = new MapStr(map`
 ...
@@ -3118,14 +3127,14 @@ async function zachAtCStore(b4Pos) {
   camera[0]++;
   camera[1]++;
   render();
-  await new Promise(res => setTimeout(res,  700));
+  await new Promise((res) => setTimeout(res, 700));
 
   screen = new MapStr(map`
 .`);
   camera[0]++;
   camera[1]++;
   render();
-  await new Promise(res => setTimeout(res,  700));
+  await new Promise((res) => setTimeout(res, 700));
 
   screen = new MapStr(BLANK_SCREEN);
   resetTriggers();
@@ -3182,7 +3191,7 @@ async function tombOf1kTriggers() {
 
         await new Promise((res) => setTimeout(res, 1000));
 
-        const state = await triggerBattle();
+        const state = await triggerBattle(canHeal);
         const won = state.you.hp > 0;
 
         modal = false;
@@ -3251,6 +3260,8 @@ async function karaHealUrMonz() {
       " Sure thing.        \n"
   );
 
+  playerHp = 100;
+
   enableHealUrMonzLater();
 }
 
@@ -3293,6 +3304,8 @@ async function karaYouBlackedOut() {
       " I'm sure you embar-\n" +
       " -assingly failed.  \n"
   );
+
+  setPlayerHp(100);
 
   modal = 0;
 }
@@ -3486,14 +3499,14 @@ async function zachYouLate() {
 
   await textWall(
     " There you are!     \n" +
-    " Where have you     \n" +
-    " been!?             \n" +
-    " We've been waiting!\n"
+      " Where have you     \n" +
+      " been!?             \n" +
+      " We've been waiting!\n"
   );
   modal = 1;
 
   render();
-  await new Promise(res => setTimeout(res, 1000));
+  await new Promise((res) => setTimeout(res, 1000));
 
   screen = new MapStr(map`
 ...
@@ -3502,7 +3515,7 @@ async function zachYouLate() {
   camera[0]++;
   // camera[1]++;
   render();
-  await new Promise(res => setTimeout(res,  700));
+  await new Promise((res) => setTimeout(res, 700));
 
   screen = new MapStr(map`
 .`);
@@ -3510,7 +3523,7 @@ async function zachYouLate() {
   camera[1]++;
   render();
   modal = 1;
-  await new Promise(res => setTimeout(res,  700));
+  await new Promise((res) => setTimeout(res, 700));
 
   screen = new MapStr(map`
 .`);
@@ -3665,6 +3678,8 @@ async function wasabiGonFiteU() {
       "        ok?         \n"
   );
 
+  setPlayerHp(100);
+
   room[1].write(...ghost, "."), render();
   await new Promise((res) => setTimeout(res, 500));
 
@@ -3754,9 +3769,26 @@ async function amogusGonFiteU() {
       " EMERGENCY MEETING? \n"
   );
 
-  await amogusBattle();
+  const amogusState = await amogusBattle();
   setRoom(roomKey, player);
   clearText();
+
+  if (amogusState.them.hp <= 0) {
+    canHeal = true;
+    await textWall(
+      "  orpheus absorbed  \n" +
+        "  amogus's healing  \n" +
+        "  ability!          \n"
+    );
+  } else {
+    await textWall(
+      "  orpheus DID NOT  \n" +
+        "          absorb    \n" +
+        "  amogus's healing  \n" +
+        "  ability!          \n" +
+        "  (get gud noob)    \n"
+    );
+  }
 
   await new Promise((res) => setTimeout(res, 500));
   rooms.hq[2].write(...hqHiddenVent, "."), render();

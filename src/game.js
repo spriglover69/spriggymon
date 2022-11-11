@@ -3,6 +3,10 @@ import withHealthbar from "./sprites/withHealthbar";
 
 export let playerHp = 100;
 
+export function setPlayerHp(hp) {
+  playerHp = hp;
+}
+
 export let state = {
   gameRunning: false,
   you: {

@@ -76,9 +76,31 @@ export async function oldManBattle() {
 }
 
 export async function amogusBattle() {
-  return await startGame(players.orpheus, players.amogus);
+  return await startGame(
+    {
+      ...players.orpheus,
+      attacks: {
+        attack: players.orpheus.attacks.attack,
+        weaken: players.orpheus.attacks.weaken,
+      },
+    },
+    players.amogus
+  );
 }
 
-export async function triggerBattle() {
-  return await startGame(players.orpheus, players.trigger);
+export async function triggerBattle(canHeal) {
+  if (canHeal) {
+    return await startGame(players.orpheus, players.trigger);
+  } else {
+    return await startGame(
+      {
+        ...players.orpheus,
+        attacks: {
+          attack: players.orpheus.attacks.attack,
+          weaken: players.orpheus.attacks.weaken,
+        },
+      },
+      players.trigger
+    );
+  }
 }
